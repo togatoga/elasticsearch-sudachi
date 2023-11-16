@@ -186,6 +186,78 @@ class CustomAnalyzerTest : SearchEngineTestBase {
   }
 
   @Test
+  fun stopwordsAndNormalized() {
+    val settings =
+        """
+      {
+        "index.analysis": {          
+          "analyzer": {
+            "sudachi_test": {
+              "type": "custom",
+              "tokenizer": "sudachi_tokenizer",
+              "filter": [
+                "my_stopfilter",
+                "sudachi_normalizedform"
+              ]
+            }
+          },
+          "tokenizer": {
+            "sudachi_tokenizer": {
+              "type": "sudachi_tokenizer",
+              "split_mode": "C"
+            }
+          },
+          "filter": {
+            "my_stopfilter": {
+              "type": "sudachi_ja_stop",
+              "stopwords": ["に", "ふく", "吹く"]
+            }
+          }
+        }
+      }
+    """.jsonSettings()
+    val analyzers = engine.indexAnalyzers(settings)
+    val basic = analyzers.get("sudachi_test")
+    basic.assertTerms("東京にふく", "東京", "に", "吹く")
+  }
+
+  @Test
+  fun normalizedAndstopwords() {
+    val settings =
+        """
+      {
+        "index.analysis": {          
+          "analyzer": {
+            "sudachi_test": {
+              "type": "custom",
+              "tokenizer": "sudachi_tokenizer",
+              "filter": [
+                "sudachi_normalizedform",
+                "my_stopfilter"
+              ]
+            }
+          },
+          "tokenizer": {
+            "sudachi_tokenizer": {
+              "type": "sudachi_tokenizer",
+              "split_mode": "C"
+            }
+          },
+          "filter": {
+            "my_stopfilter": {
+              "type": "sudachi_ja_stop",
+              "stopwords": ["に", "吹く"]
+            }
+          }
+        }
+      }
+    """.jsonSettings()
+    val analyzers = engine.indexAnalyzers(settings)
+    val basic = analyzers.get("sudachi_test")
+    basic.assertTerms("東京にふく", "東京")
+  }
+
+  @Test
   fun readingFormKatakana() {
     val settings =
         """
